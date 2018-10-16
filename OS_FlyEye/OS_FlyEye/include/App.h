@@ -47,6 +47,12 @@ class App
   onRender();
 
   /**
+   * Updates the objects and polls for inputs
+   */
+  void
+  onUpdate();
+
+  /**
    * Member declaration
    */
  public:

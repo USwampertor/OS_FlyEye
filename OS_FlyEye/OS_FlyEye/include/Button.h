@@ -23,6 +23,18 @@ class Button
  public:
   
   /**
+   * Default constructor
+   */
+  Button() = default;
+
+
+  /**
+   * Default destructor
+   */
+  ~Button() = default;
+  
+  
+  /**
    * The function to initialize the drawing of the fly Eye
    */
   void

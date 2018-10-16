@@ -21,6 +21,23 @@
 class TextBox
 {
  public:
+  
+  /**
+   * Default constructor
+   */
+  TextBox() = default;
+
+  /**
+   * Default destructor
+   */
+  ~TextBox() = default;
+   
+  /**
+   * @brief Inserts the user input into the text box
+   * @param user data: the string to insert
+   * @return --
+   * 
+   */
   void 
   insertData(std::string userData);
 
