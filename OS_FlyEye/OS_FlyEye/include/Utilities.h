@@ -16,3 +16,28 @@
 #include <vector>
 
 #include <SFML/Graphics.hpp>
+
+/**
+ * @brief converts degrees to rads
+ * @param angle to convert
+ * @return 
+ *
+ */
+static const double 
+degToRad(double angle) {
+  //Multiply and divide by 1000 to not lose precision
+  double tofloor = std::floor(angle * (3.1415926 / 180) * 1000);
+  return tofloor / 1000;
+}
+/**
+ * @brief converts rads to degrees
+ * @param rads to convert
+ * @return 
+ *
+ */
+static const double 
+radToDeg(double angle) {
+  //Multiply and divide by 1000 to not lose precision
+  double tofloor = std::floor(angle * (180 / 3.1415926) * 1000);
+  return tofloor / 1000;
+}

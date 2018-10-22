@@ -14,6 +14,46 @@
 #include "Utilities.h"
 
 /**
+ * Line
+ * Description:
+ * 	a capsuled vertex to access to its shit
+ * Sample usage:
+ * 	drawLine
+ */
+class line {
+public:
+  line(sf::Vector2f a, sf::Vector2f b) {
+    m_p[0].position = a;
+    m_p[0].color = sf::Color::White;
+    m_p[1].position = b;
+    m_p[1].color = sf::Color::Blue;
+  }
+  
+  sf::Vertex m_p[2];
+};
+
+/**
+ * PointSet
+ * Description:
+ * 	a group of lines that will render per point
+ * Sample usage:
+ *
+ */
+class pointSet {
+ public:
+
+  /**
+   * the amount of lines per point to draw
+   */
+  std::vector<line> m_linesPerPoint;
+
+  /**
+   * Tells to the thread or to the while that all the lines have been drawn;
+   */
+  bool m_finished;
+};
+
+/**
 * App
 * Description:
 *   Is the main class in which everything runs
@@ -38,7 +78,7 @@ class App
    * Initializes the window from SFML
    */
   void
-  initiate();
+  initialize();
 
   /**
    * Rendering of objects inside
@@ -53,6 +93,59 @@ class App
   onUpdate();
 
   /**
+   * Checks everytime the user clicks
+   */
+  void
+  onClick();
+
+  /**
+   * @brief Prepares the canvas to draw the fly eye 
+   * @param 
+   * @return 
+   *
+   */
+  bool
+  startCalculation();
+
+  /**
+   * @brief Sets the coordinates for all the lines to draw
+   * @param 
+   * @return 
+   *
+   */
+  void
+  setCoordinates();
+
+  /**
+   * @brief Sets all the lines before drawing them and sorts them so each point
+   *  draws the same amount of lines
+   * @param 
+   * @return 
+   *
+   */
+  void
+  setLines();
+
+  /**
+   * @brief Draw with threads, sets how much each thread will draw
+   * @param 
+   * @return 
+   *
+   */
+  void
+  drawThreads();
+
+  /**
+   * @brief inserts the thread in a list with all the lines to render
+   * @param the amount of threads to use (1 if not using threads)
+   * @return
+   *
+   */
+  void
+  drawLines(int amount = 1);
+
+
+  /**
    * Member declaration
    */
  public:
@@ -63,8 +156,73 @@ class App
   sf::RenderWindow m_window;
 
   /**
-   * Button for initialization of fly eye drawing
+   * Button for initialization of fly eye drawing with threads
    */
+  Button m_threadStart;
 
+  /**
+   * Button for initialization of drawing
+   */
+  Button m_normalStart;
 
+  /**
+   * TextBox to say how many threads use
+   */
+  TextBox m_threadCount;
+
+  /**
+   * TextBox to tell how many lines in the Fly Eye
+   */
+  TextBox m_pointCount;
+
+  /**
+   * Circle as the Eye
+   */
+  sf::CircleShape m_circle;
+
+  /**
+   * Pointer to the selected textbox;
+   */
+  TextBox* m_currentTextBox;
+
+  /**
+   * Default font
+   */
+  sf::Font m_defaultFont;
+
+  /**
+   * Catches all number inputs
+   */
+  std::string m_catcher;
+
+  /**
+   * Center of the circle
+   */
+  sf::Vector2f m_center;
+
+  /**
+   * How many points are gonna be in the circle
+   */
+  int m_totalPoints;
+
+  /**
+   * list of all points to render
+   */
+  std::vector<sf::Vector2f> m_pointList;
+
+  /**
+   * list of all point sets
+   */
+  std::vector<pointSet> m_totalSets;
+
+  /**
+   * amount of threads to draw with
+   */
+  int m_totalThreads;
+
+  /**
+   * lines per set
+   */
+  int m_linesPerSet;
 };
+

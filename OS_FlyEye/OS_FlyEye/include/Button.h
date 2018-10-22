@@ -10,7 +10,7 @@
 
 #pragma once
 #include "Utilities.h"
-
+#include "Textbox.h"
 /**
 * Button
 * Description:
@@ -18,7 +18,7 @@
 * Sample usage:
 * 	Button.onClick registers a click and does something
 */
-class Button 
+class Button : public TextBox
 {
  public:
   
@@ -40,19 +40,8 @@ class Button
   void
   onClick();
 
-  /**
-   * Member declaration
-   */
  public:
 
-  /**
-  * the Boundary for the button
-  */
-  sf::RectangleShape m_Box;
-
-  /**
-   * the text attached to the button
-   */
-  sf::Text m_text;
+  bool m_clicked;
 
 };

@@ -12,5 +12,6 @@
 
 void
 Button::onClick() {
-  std::cout << "Hi, I'm Elfo" << std::endl;
+  std::string p = m_text.getString();
+  std::cout << "clicked" << p << std::endl;
 }
