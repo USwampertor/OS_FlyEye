@@ -59,11 +59,14 @@ App::initialize() {
   m_normalStart.setData("Start w/o threads");
 
   m_currentTextBox = nullptr;
-  m_catcher = "";
+  m_catcher = "0";
 }
 
 void
 App::onUpdate() {
+
+  
+  m_lineSet.m_lineSet.clear();
 
   sf::Event event;
   while (m_window.isOpen())
@@ -82,7 +85,11 @@ App::onUpdate() {
           m_currentTextBox->m_text.setString(m_catcher);
           m_catcher.clear();
         }
-
+        else if (event.text.unicode == 8 && m_catcher.size() > 0) {
+          m_catcher.pop_back();
+          m_currentTextBox->m_text.setString(m_catcher);
+          std::cout << m_catcher << std::endl;
+        }
         else if (event.text.unicode > 47 && event.text.unicode < 58) {
           m_catcher += static_cast<char>(event.text.unicode);
           m_currentTextBox->m_text.setString(m_catcher);
@@ -90,6 +97,8 @@ App::onUpdate() {
         }
       }
     }
+
+    if (m_normalStart.m_clicked) { drawLines(); }
 
     m_window.clear();
     onRender();
@@ -111,8 +120,24 @@ App::onRender() {
 
   m_window.draw(m_circle);
 
-  drawLines();
 
+  if (m_threadStart.m_clicked) {
+    std::unique_lock<std::mutex> lock(m_lineSet.m_mutex, std::try_to_lock);
+    if (lock.owns_lock()) {
+      //m_lineSet.m_mutex.lock();
+      for (int i = 0; i < m_lineSet.m_lineSet.size(); ++i) {
+        m_window.draw(m_lineSet.m_lineSet[i].m_p, 2, sf::Lines);
+      }
+      //m_lineSet.m_mutex.unlock();
+      lock.unlock();
+    }
+
+  }
+  else {
+    for (int i = 0; i < m_lineSet.m_lineSet.size(); ++i) {
+      m_window.draw(m_lineSet.m_lineSet[i].m_p, 2, sf::Lines);
+    }
+  }
 }
 
 void
@@ -131,6 +156,7 @@ App::onClick() {
     if (m_currentTextBox != nullptr) { m_currentTextBox->m_text.setString(m_catcher); }
     m_catcher.clear();
     m_currentTextBox = &m_pointCount;
+    m_currentTextBox->m_text.setString(m_catcher);
   }
 
   else if (mousePos.x > m_threadCount.m_box.getPosition().x &&
@@ -142,6 +168,7 @@ App::onClick() {
     if (m_currentTextBox != nullptr) { m_currentTextBox->m_text.setString(m_catcher); }
     m_catcher.clear();
     m_currentTextBox = &m_threadCount;
+    m_currentTextBox->m_text.setString(m_catcher);
   }
 
   else if (mousePos.x > m_threadStart.m_box.getPosition().x &&
@@ -150,7 +177,11 @@ App::onClick() {
            mousePos.y < m_threadStart.m_box.getPosition().y + m_threadStart.m_box.getSize().y) {
 
     std::cout << "selected thread start" << std::endl;
-    m_threadStart.onClick();
+    if (startCalculation()) { 
+      m_threadStart.onClick();
+      m_normalStart.m_clicked = false;
+      startThreads();
+    }
   }
 
   else if (mousePos.x > m_normalStart.m_box.getPosition().x &&
@@ -159,8 +190,11 @@ App::onClick() {
            mousePos.y < m_normalStart.m_box.getPosition().y + m_normalStart.m_box.getSize().y) {
     
     std::cout << "selected normal start" << std::endl;
-    m_normalStart.onClick();
-    if (startCalculation()) { drawLines(); }
+    
+    if (startCalculation()) {
+      m_threadStart.m_clicked = false;
+      m_normalStart.onClick();
+    }
   }
 
 }
@@ -171,6 +205,7 @@ App::startCalculation() {
 
   std::string points = m_pointCount.m_text.getString();
   std::string thrds = m_threadCount.m_text.getString();
+
   m_totalPoints = atoi(points.c_str());
   m_totalThreads = atoi(thrds.c_str());
 
@@ -184,7 +219,8 @@ App::startCalculation() {
 
   m_totalSets.clear();
   m_pointList.clear();
-  
+  m_lineSet.m_lineSet.clear();
+
   if (m_threadStart.m_clicked && m_totalThreads < 2) {
     std::cout << "Too little threads to draw in parallel" << std::endl;
     return false;
@@ -240,22 +276,73 @@ App::setLines() {
   }
 }
 
+
 void
-App::drawThreads() {
+App::startThreads() {
+  
+  for (int i = 0; i < m_totalThreads; ++i) {
+    std::thread t(&App::drawThreads, this, m_totalSets.size() / m_totalThreads, i*m_totalSets.size() / m_totalThreads);
+    //pool.push_back(std::thread(&App::drawThreads, m_totalSets.size() / m_totalThreads, i*m_totalSets.size() / m_totalThreads));
+    //pool.push_back(t);
+    t.join();
+  }
+
+  //for (int i = 0; i < m_totalThreads; ++i) {
+  //  pool[i].join();
+  //}
 
 }
 
 void
-App::drawLines(int amount) {
-  //sets how many sets each thread will draw in case of using threads,so no one
-  //steps on another thread
-  int times = m_totalSets.size() / amount;
-  
+App::drawThreads(int amount, int offset) {
 
-  for (int i = 0; i < times; ++i) {
+  for (int start = offset, i = 0; i < amount; ++i) {
 
     for (int j = 0; j < m_linesPerSet; ++j) {
-      m_window.draw(m_totalSets[i].m_linesPerPoint[j].m_p, 2, sf::Lines);
+      std::unique_lock<std::mutex> lock(m_lineSet.m_mutex, std::try_to_lock);
+      if (lock.owns_lock()) {
+        //m_lineSet.m_mutex.lock();
+        //lock.lock();
+        m_lineSet.m_lineSet.push_back(m_totalSets[start+i].m_linesPerPoint[j]);
+        //m_lineSet.m_mutex.unlock();
+        lock.unlock();
+      }
+      std::this_thread::sleep_for(std::chrono::milliseconds(20));
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+  }
+}
+
+void
+App::drawLines() {
+  //sets how many sets each thread will draw in case of using threads,so no one
+  //steps on another thread
+  while (running < m_totalSets.size()) {
+    
+    while (setRunning < m_linesPerSet) {
+  
+      m_lineSet.m_lineSet.push_back(m_totalSets[running].m_linesPerPoint[setRunning]);
+     
+      ++setRunning;
+      if (setRunning >= m_linesPerSet) {
+        ++running;
+        setRunning = 0;
+      }
+      if (running >= m_totalSets.size()) {
+        running = 0;
+        setRunning = 0;
+        m_normalStart.m_clicked = false;
+      }
+      return;
     }
   }
+
+  //for (int i = 0; i < m_totalSets.size(); ++i) {
+  //  for (int j = 0; j < m_linesPerSet; ++j) {
+  //    m_lineSet.m_lineSet.push_back(m_totalSets[i].m_linesPerPoint[j]);
+  //
+  //  }
+  //}
+  m_normalStart.m_clicked = false;
+
 }

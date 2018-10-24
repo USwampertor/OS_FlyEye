@@ -13,6 +13,8 @@
 #include "Textbox.h"
 #include "Utilities.h"
 
+
+
 /**
  * Line
  * Description:
@@ -20,8 +22,12 @@
  * Sample usage:
  * 	drawLine
  */
-class line {
+class line 
+{
 public:
+  /**
+   * Constructor with a set of vectors that define starting point A and ending point B
+   */
   line(sf::Vector2f a, sf::Vector2f b) {
     m_p[0].position = a;
     m_p[0].color = sf::Color::White;
@@ -29,7 +35,27 @@ public:
     m_p[1].color = sf::Color::Blue;
   }
   
+ public:
   sf::Vertex m_p[2];
+};
+
+ /**
+  * lineSet
+  * Description:
+  * 	vector of lines but with mutex for handling
+  * Sample usage:
+  * 	
+  */
+class lineSet 
+{
+ public:
+
+
+ public:
+
+  std::vector<line> m_lineSet;
+
+  std::mutex m_mutex;
 };
 
 /**
@@ -39,7 +65,8 @@ public:
  * Sample usage:
  *
  */
-class pointSet {
+class pointSet 
+{
  public:
 
   /**
@@ -51,6 +78,41 @@ class pointSet {
    * Tells to the thread or to the while that all the lines have been drawn;
    */
   bool m_finished;
+};
+
+/**
+ * lineDrawer
+ * Description:
+ * 	thread handler that draws the lines with threads
+ * Sample usage:
+ *
+ */
+class lineDrawer
+{
+ public:
+  void
+  drawThreads(int amount, 
+              int offset, 
+              int linesPerSet, 
+              lineSet& setLines, 
+              std::vector<pointSet> points ) {
+
+    for (int start = offset, i = 0; i < amount; ++i) {
+
+      for (int j = 0; j < linesPerSet; ++j) {
+        std::unique_lock<std::mutex> lock(setLines.m_mutex, std::try_to_lock);
+        if (lock.owns_lock()) {
+          //m_lineSet.m_mutex.lock();
+          //lock.lock();
+          setLines.m_lineSet.push_back(points[start + i].m_linesPerPoint[j]);
+          //m_lineSet.m_mutex.unlock();
+          lock.unlock();
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(20));
+      }
+      std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    }
+  }
 };
 
 /**
@@ -133,7 +195,7 @@ class App
    *
    */
   void
-  drawThreads();
+  drawThreads(int amount, int offset);
 
   /**
    * @brief inserts the thread in a list with all the lines to render
@@ -142,9 +204,16 @@ class App
    *
    */
   void
-  drawLines(int amount = 1);
+  drawLines();
 
-
+  /**
+   * @brief sets the thread pool
+   * @param 
+   * @return 
+   *
+   */
+  void
+  startThreads();
   /**
    * Member declaration
    */
@@ -224,5 +293,13 @@ class App
    * lines per set
    */
   int m_linesPerSet;
+
+  /**
+   * The lines to draw constantly
+   */
+  lineSet m_lineSet;
+
+  int running = 0;
+  int setRunning = 0;
 };
 

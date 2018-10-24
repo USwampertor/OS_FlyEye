@@ -14,4 +14,5 @@ void
 Button::onClick() {
   std::string p = m_text.getString();
   std::cout << "clicked" << p << std::endl;
+  m_clicked = true;
 }
