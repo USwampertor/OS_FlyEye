@@ -37,6 +37,7 @@ public:
   
  public:
   sf::Vertex m_p[2];
+  bool m_drawn = false;
 };
 
  /**
@@ -80,6 +81,8 @@ class pointSet
   bool m_finished;
 };
 
+class App;
+
 /**
  * lineDrawer
  * Description:
@@ -90,29 +93,41 @@ class pointSet
 class lineDrawer
 {
  public:
-  void
-  drawThreads(int amount, 
-              int offset, 
-              int linesPerSet, 
-              lineSet& setLines, 
-              std::vector<pointSet> points ) {
 
-    for (int start = offset, i = 0; i < amount; ++i) {
-
-      for (int j = 0; j < linesPerSet; ++j) {
-        std::unique_lock<std::mutex> lock(setLines.m_mutex, std::try_to_lock);
-        if (lock.owns_lock()) {
-          //m_lineSet.m_mutex.lock();
-          //lock.lock();
-          setLines.m_lineSet.push_back(points[start + i].m_linesPerPoint[j]);
-          //m_lineSet.m_mutex.unlock();
-          lock.unlock();
-        }
-        std::this_thread::sleep_for(std::chrono::milliseconds(20));
-      }
-      std::this_thread::sleep_for(std::chrono::milliseconds(200));
-    }
+   lineDrawer(
+     //int amount,
+     //int offset,
+     //int linesperSet,
+     //lineSet& lineset,
+     //std::vector<pointSet> points,
+     //sf::RenderWindow* window,
+     App& app)
+     : 
+     //m_amount(amount),
+     //m_offset(offset),
+     //m_linesPerSet(linesperSet),
+     //m_setLines(lineset),
+     //m_points(points),
+     //m_window(window),
+     m_finished(false),
+     m_app(app) {
+     std::cout << "test";
   }
+
+  //void
+  //drawThreads();
+
+  void
+  draw();
+
+  //int m_amount = 0;
+  //int m_offset = 0;
+  //int m_linesPerSet = 0;
+  App& m_app;
+  //lineSet& m_setLines;
+  //std::vector<pointSet> m_points;
+  //sf::RenderWindow* m_window = nullptr;
+  bool m_finished = false;
 };
 
 /**
@@ -300,6 +315,13 @@ class App
   lineSet m_lineSet;
 
   int running = 0;
+
   int setRunning = 0;
+
+  std::vector<std::thread*> m_pThreads;
+
+  std::vector<lineDrawer> m_lSets;
+
+  std::mutex m_mutex;
 };
 

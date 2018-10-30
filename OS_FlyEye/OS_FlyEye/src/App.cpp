@@ -10,6 +10,7 @@
 #include "pch.h"
 #include "App.h"
 
+
 void
 App::initialize() {
 
@@ -124,11 +125,9 @@ App::onRender() {
   if (m_threadStart.m_clicked) {
     std::unique_lock<std::mutex> lock(m_lineSet.m_mutex, std::try_to_lock);
     if (lock.owns_lock()) {
-      //m_lineSet.m_mutex.lock();
-      for (int i = 0; i < m_lineSet.m_lineSet.size(); ++i) {
-        m_window.draw(m_lineSet.m_lineSet[i].m_p, 2, sf::Lines);
+      for (int index = 0; index < m_lineSet.m_lineSet.size(); ++index) {
+        m_window.draw(m_lineSet.m_lineSet[index].m_p, 2, sf::Lines);
       }
-      //m_lineSet.m_mutex.unlock();
       lock.unlock();
     }
 
@@ -279,39 +278,73 @@ App::setLines() {
 
 void
 App::startThreads() {
-  
-  for (int i = 0; i < m_totalThreads; ++i) {
-    std::thread t(&App::drawThreads, this, m_totalSets.size() / m_totalThreads, i*m_totalSets.size() / m_totalThreads);
-    //pool.push_back(std::thread(&App::drawThreads, m_totalSets.size() / m_totalThreads, i*m_totalSets.size() / m_totalThreads));
-    //pool.push_back(t);
-    t.join();
+
+  m_pThreads.clear();
+  m_lSets.clear();
+
+  for (int i = 0; i < m_totalSets.size(); ++i) {
+    for (int j = 0; j < m_linesPerSet; ++j) {
+      m_lineSet.m_lineSet.push_back(m_totalSets[i].m_linesPerPoint[j]);
+    }
   }
 
-  //for (int i = 0; i < m_totalThreads; ++i) {
-  //  pool[i].join();
-  //}
+  m_window.setActive(false);
 
+  
+  for (int i = 0; i < m_totalThreads; ++i) {
+    
+    lineDrawer p(*this);
+    m_lSets.emplace_back(p);
+
+    m_pThreads.push_back(new std::thread(&lineDrawer::draw, &m_lSets[i]));
+
+  }
+
+  for (auto thread : m_pThreads) {
+    thread->join();
+  }
+
+  int finished = 0;
+  while (true)
+  {
+    for (auto drawer : m_lSets) {
+      if (drawer.m_finished == true) { ++finished; }
+    }
+    if (finished == m_totalThreads) { break; }
+  }
+
+  for (auto thread : m_pThreads) {
+    delete thread;
+  }
+
+  m_window.setActive(true);
 }
 
 void
-App::drawThreads(int amount, int offset) {
+lineDrawer::draw() {
 
-  for (int start = offset, i = 0; i < amount; ++i) {
+  int offset = m_app.m_lineSet.m_lineSet.size() / m_app.m_totalThreads;
+  for (int i = 0; i < m_app.m_lineSet.m_lineSet.size()/m_app.m_totalThreads; ++i)
+  {
+    do 
+    {
+      std::unique_lock<std::mutex> lock(m_app.m_mutex, std::try_to_lock);
 
-    for (int j = 0; j < m_linesPerSet; ++j) {
-      std::unique_lock<std::mutex> lock(m_lineSet.m_mutex, std::try_to_lock);
       if (lock.owns_lock()) {
-        //m_lineSet.m_mutex.lock();
-        //lock.lock();
-        m_lineSet.m_lineSet.push_back(m_totalSets[start+i].m_linesPerPoint[j]);
-        //m_lineSet.m_mutex.unlock();
+        m_app.m_window.setActive(true);
+        //m_setLines.m_lineSet[m_offset + i].m_drawn = true;
+        m_app.m_window.draw(m_app.m_lineSet.m_lineSet[offset + i].m_p, 2, sf::Lines);
+        std::this_thread::sleep_for(std::chrono::milliseconds(20));
+        //m_window->display();
+        m_app.m_window.setActive(false);
         lock.unlock();
       }
-      std::this_thread::sleep_for(std::chrono::milliseconds(20));
-    }
-    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    } while (m_app.m_lineSet.m_lineSet[offset + i].m_drawn == false);
+
   }
+  m_finished = true;
 }
+
 
 void
 App::drawLines() {
@@ -337,12 +370,6 @@ App::drawLines() {
     }
   }
 
-  //for (int i = 0; i < m_totalSets.size(); ++i) {
-  //  for (int j = 0; j < m_linesPerSet; ++j) {
-  //    m_lineSet.m_lineSet.push_back(m_totalSets[i].m_linesPerPoint[j]);
-  //
-  //  }
-  //}
   m_normalStart.m_clicked = false;
 
 }

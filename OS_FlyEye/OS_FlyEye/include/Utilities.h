@@ -18,6 +18,7 @@
 
 #include <SFML/Graphics.hpp>
 
+#define _VARIADIC_MAX 10
 /**
  * @brief converts degrees to rads
  * @param angle to convert
